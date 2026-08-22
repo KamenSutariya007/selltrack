@@ -1,0 +1,231 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products  Product[]
+  orders    Order[]
+  returns   Return[]
+  expenses  Expense[]
+  payments  Payment[]
+  notifications Notification[]
+}
+
+enum Platform {
+  AMAZON
+  FLIPKART
+  MEESHO
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  RETURNED_ADJUSTED
+}
+
+enum OrderStatus {
+  CREATED
+  SHIPPED
+  DELIVERED
+  PAYMENT_EXPECTED
+  PAYMENT_RECEIVED
+  RETURN_REQUESTED
+  RETURNED
+  RETURN_RECEIVED
+  REFUND_ADJUSTED
+  CANCELLED
+}
+
+enum ProductCondition {
+  GOOD
+  DAMAGED
+  USED
+  MISSING
+}
+
+enum ExpenseCategory {
+  SHIPPING
+  PACKAGING
+  PLATFORM_COMMISSION
+  GST_TAX
+  RETURN_CHARGE
+  ADVERTISING
+  PRODUCT_PURCHASE
+  OTHER
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  userId        String
+  productName   String
+  sku           String
+  barcode       String   @unique
+  category      String?
+  size          String?
+  color         String?
+  costPrice     Float    @default(0)
+  sellingPrice  Float    @default(0)
+  currentStock  Int      @default(0)
+  returnedStock Int      @default(0)
+  damagedStock  Int      @default(0)
+  lostStock     Int      @default(0)
+  minimumStock  Int      @default(5)
+  platform      Platform?
+  supplier      String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@index([userId])
+  @@index([sku])
+}
+
+model Order {
+  id                  String        @id @default(cuid())
+  userId              String
+  orderId             String
+  platform            Platform
+  productId           String?
+  productName         String
+  sku                 String?
+  barcode             String?
+  size                String?
+  color               String?
+  quantity            Int           @default(1)
+  productCost         Float         @default(0)
+  sellingPrice        Float         @default(0)
+  customerRef         String?
+  orderDate           DateTime
+  expectedPaymentDate DateTime
+  actualPaymentDate   DateTime?
+  paymentStatus       PaymentStatus @default(PENDING)
+  orderStatus         OrderStatus   @default(CREATED)
+  shippingCharge      Float         @default(0)
+  platformCommission  Float         @default(0)
+  gstTax              Float         @default(0)
+  otherCharges        Float         @default(0)
+  returnCharges       Float         @default(0)
+  grossProfit         Float         @default(0)
+  netProfit           Float         @default(0)
+  isReturned          Boolean       @default(false)
+  notes               String?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product?         @relation(fields: [productId], references: [id], onDelete: SetNull)
+  returns   Return[]
+  payments  Payment[]
+  expenses  Expense[]
+  timeline  OrderTimeline[]
+
+  @@unique([userId, orderId])
+  @@index([userId])
+  @@index([orderDate])
+  @@index([platform])
+  @@index([paymentStatus])
+}
+
+model OrderTimeline {
+  id        String      @id @default(cuid())
+  orderId   String
+  status    OrderStatus
+  note      String?
+  createdAt DateTime    @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model Return {
+  id                    String           @id @default(cuid())
+  userId                String
+  orderDbId             String
+  returnDate            DateTime
+  quantity              Int              @default(1)
+  reason                String
+  returnCharge          Float            @default(0)
+  reverseShippingCharge Float            @default(0)
+  lossAmount            Float            @default(0)
+  productCondition      ProductCondition @default(GOOD)
+  notes                 String?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order Order @relation(fields: [orderDbId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([orderDbId])
+}
+
+model Expense {
+  id          String          @id @default(cuid())
+  userId      String
+  date        DateTime
+  category    ExpenseCategory
+  amount      Float
+  platform    Platform?
+  orderDbId   String?
+  description String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order Order? @relation(fields: [orderDbId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([date])
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  userId        String
+  orderDbId     String
+  expectedDate  DateTime
+  paymentDate   DateTime?
+  amount        Float
+  status        PaymentStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order Order @relation(fields: [orderDbId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+}
