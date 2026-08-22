@@ -14,8 +14,10 @@ export async function POST(request: Request) {
     const body = await request.json();
     const data = registerSchema.parse(body);
 
+    const email = data.email.toLowerCase().trim();
+
     const existing = await prisma.user.findUnique({
-      where: { email: data.email },
+      where: { email },
     });
 
     if (existing) {
@@ -26,8 +28,8 @@ export async function POST(request: Request) {
 
     const user = await prisma.user.create({
       data: {
-        name: data.name,
-        email: data.email,
+        name: data.name.trim(),
+        email,
         password: hashedPassword,
       },
       select: { id: true, name: true, email: true },
@@ -38,6 +40,10 @@ export async function POST(request: Request) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors[0].message }, { status: 400 });
     }
-    return NextResponse.json({ error: "Registration failed" }, { status: 500 });
+    console.error("Registration error:", error);
+    return NextResponse.json(
+      { error: "Registration failed. Database connection issue — check Vercel DATABASE_URL." },
+      { status: 500 }
+    );
   }
 }

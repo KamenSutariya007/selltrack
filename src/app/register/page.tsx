@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -33,7 +34,20 @@ export default function RegisterPage() {
       return;
     }
 
-    router.push("/login?registered=true");
+    const login = await signIn("credentials", {
+      email: email.toLowerCase().trim(),
+      password,
+      redirect: false,
+    });
+
+    if (login?.error) {
+      setError("Account created but login failed. Please sign in manually.");
+      setLoading(false);
+      return;
+    }
+
+    router.push("/dashboard");
+    router.refresh();
   };
 
   return (
