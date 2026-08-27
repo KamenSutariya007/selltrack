@@ -111,13 +111,6 @@ export default function LoginPage() {
           <Button type="submit" className="w-full" size="lg" disabled={loading}>
             {loading ? "Signing in..." : "Sign In"}
           </Button>
-
-          <p className="text-center text-sm text-slate-500">
-            Don&apos;t have an account?{" "}
-            <Link href="/register" className="text-blue-600 font-medium">
-              Register
-            </Link>
-          </p>
         </form>
       </div>
     </div>

@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     if (!user) {
       return NextResponse.json(
         {
-          error: "Account not found. Please register with the authorized email address.",
+          error: "Account not found. Please contact administrator.",
           code: "ACCOUNT_NOT_FOUND",
         },
         { status: 404 }
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     if (!isAllowedRegistrationEmail(normalizedEmail)) {
       return NextResponse.json(
         {
-          error: "Account not found. Please register with the authorized email address.",
+          error: "Account not found. Please contact administrator.",
           code: "UNAUTHORIZED",
         },
         { status: 403 }
