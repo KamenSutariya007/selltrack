@@ -75,13 +75,18 @@ export async function POST(request: Request) {
 
     await sendVerificationEmail(email, verificationToken);
 
+    const verifyUrl = `${getAppUrl()}/api/auth/verify-email?token=${verificationToken}`;
+    const smtpConfigured = !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+
     const response: Record<string, unknown> = {
       user,
       message: "Registration successful. Please verify your email before logging in.",
     };
 
-    if (process.env.NODE_ENV === "development" && !process.env.SMTP_HOST) {
-      response.verificationUrl = `${getAppUrl()}/api/auth/verify-email?token=${verificationToken}`;
+    if (!smtpConfigured) {
+      response.verificationUrl = verifyUrl;
+      response.note =
+        "Email service not configured. Use the verification link below to verify your account.";
     }
 
     return NextResponse.json(response, { status: 201 });

@@ -63,7 +63,11 @@ export default function RegisterPage() {
       return;
     }
 
-    router.push(`/verify-email?email=${encodeURIComponent(email.toLowerCase().trim())}&registered=true`);
+    router.push(
+      `/verify-email?email=${encodeURIComponent(email.toLowerCase().trim())}&registered=true${
+        data.verificationUrl ? `&verifyUrl=${encodeURIComponent(data.verificationUrl)}` : ""
+      }`
+    );
   };
 
   return (

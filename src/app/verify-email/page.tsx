@@ -12,6 +12,7 @@ function VerifyEmailContent() {
   const registered = searchParams.get("registered") === "true";
   const success = searchParams.get("success") === "true";
   const error = searchParams.get("error");
+  const verifyUrl = searchParams.get("verifyUrl") || "";
   const [resendMsg, setResendMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -75,6 +76,14 @@ function VerifyEmailContent() {
               {email ? <strong>{email}</strong> : "your email"}.
               Please verify before logging in.
             </p>
+            {verifyUrl && (
+              <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-left text-sm">
+                <p className="font-medium text-amber-800 mb-2">Verify now (click below):</p>
+                <a href={verifyUrl} className="text-blue-600 break-all underline">
+                  Verify Email
+                </a>
+              </div>
+            )}
             {email && (
               <Button onClick={handleResend} variant="secondary" className="w-full" disabled={loading}>
                 {loading ? "Sending..." : "Resend Verification Email"}
