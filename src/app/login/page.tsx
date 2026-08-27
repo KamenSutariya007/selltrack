@@ -6,6 +6,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PASSWORD_MIN_LENGTH } from "@/lib/auth-config";
+
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,6 +24,32 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
+    if (!email.trim()) {
+      setError("Email is required");
+      setLoading(false);
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setError("Enter a valid email address");
+      setLoading(false);
+      return;
+    }
+
+    const checkRes = await fetch("/api/auth/check-login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const checkData = await checkRes.json();
+
+    if (!checkRes.ok) {
+      setError(checkData.error || "Login failed");
+      setLoading(false);
+      return;
+    }
+
     const result = await signIn("credentials", {
       email: email.toLowerCase().trim(),
       password,
@@ -26,12 +57,13 @@ export default function LoginPage() {
     });
 
     if (result?.error) {
-      setError("Invalid email or password");
+      setError("Login failed. Please try again.");
       setLoading(false);
-    } else {
-      router.push("/dashboard");
-      router.refresh();
+      return;
     }
+
+    router.push("/dashboard");
+    router.refresh();
   };
 
   return (
@@ -56,6 +88,7 @@ export default function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
             placeholder="your@email.com"
+            autoComplete="email"
           />
 
           <Input
@@ -64,8 +97,16 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            minLength={PASSWORD_MIN_LENGTH}
             placeholder="••••••••"
+            autoComplete="current-password"
           />
+
+          <div className="text-right">
+            <Link href="/forgot-password" className="text-sm text-blue-600 font-medium">
+              Forgot Password?
+            </Link>
+          </div>
 
           <Button type="submit" className="w-full" size="lg" disabled={loading}>
             {loading ? "Signing in..." : "Sign In"}

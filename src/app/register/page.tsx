@@ -1,17 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PASSWORD_MIN_LENGTH } from "@/lib/auth-config";
+
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
 
 export default function RegisterPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -19,6 +24,30 @@ export default function RegisterPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
+
+    if (!email.trim()) {
+      setError("Email is required");
+      setLoading(false);
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setError("Enter a valid email address");
+      setLoading(false);
+      return;
+    }
+
+    if (password.length < PASSWORD_MIN_LENGTH) {
+      setError(`Password must be at least ${PASSWORD_MIN_LENGTH} characters.`);
+      setLoading(false);
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      setLoading(false);
+      return;
+    }
 
     const res = await fetch("/api/auth/register", {
       method: "POST",
@@ -34,20 +63,7 @@ export default function RegisterPage() {
       return;
     }
 
-    const login = await signIn("credentials", {
-      email: email.toLowerCase().trim(),
-      password,
-      redirect: false,
-    });
-
-    if (login?.error) {
-      setError("Account created but login failed. Please sign in manually.");
-      setLoading(false);
-      return;
-    }
-
-    router.push("/dashboard");
-    router.refresh();
+    router.push(`/verify-email?email=${encodeURIComponent(email.toLowerCase().trim())}&registered=true`);
   };
 
   return (
@@ -80,6 +96,7 @@ export default function RegisterPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
             placeholder="your@email.com"
+            autoComplete="email"
           />
 
           <Input
@@ -88,12 +105,24 @@ export default function RegisterPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            minLength={6}
-            placeholder="Min 6 characters"
+            minLength={PASSWORD_MIN_LENGTH}
+            placeholder={`Min ${PASSWORD_MIN_LENGTH} characters`}
+            autoComplete="new-password"
+          />
+
+          <Input
+            label="Confirm Password"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            minLength={PASSWORD_MIN_LENGTH}
+            placeholder="Confirm password"
+            autoComplete="new-password"
           />
 
           <Button type="submit" className="w-full" size="lg" disabled={loading}>
-            {loading ? "Creating account..." : "Create Account"}
+            {loading ? "Creating account..." : "Register"}
           </Button>
 
           <p className="text-center text-sm text-slate-500">
