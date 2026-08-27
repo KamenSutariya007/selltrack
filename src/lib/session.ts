@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "./auth";
 import { prisma } from "./prisma";
-import { isAllowedRegistrationEmail, normalizeEmail } from "./auth-config";
+import { isAllowedUsername, normalizeUsername } from "./auth-config";
 
 export async function getSession() {
   return getServerSession(authOptions);
@@ -19,11 +19,11 @@ export async function requireUserId(): Promise<string> {
   }
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user || user.status !== "active" || !user.emailVerified) {
+  if (!user || user.status !== "active") {
     throw new Error("Unauthorized");
   }
 
-  if (!isAllowedRegistrationEmail(user.email)) {
+  if (!isAllowedUsername(user.username)) {
     throw new Error("Unauthorized");
   }
 
@@ -40,8 +40,7 @@ export async function getAuthorizedUser() {
 
   if (!user) return null;
   if (user.status !== "active") return null;
-  if (!user.emailVerified) return null;
-  if (!isAllowedRegistrationEmail(user.email)) return null;
+  if (!isAllowedUsername(user.username)) return null;
 
   return user;
 }
@@ -54,8 +53,4 @@ export async function requireAuthorizedUser() {
   return user;
 }
 
-export function isEmailAllowedForRegistration(email: string): boolean {
-  return isAllowedRegistrationEmail(email);
-}
-
-export { normalizeEmail };
+export { normalizeUsername };

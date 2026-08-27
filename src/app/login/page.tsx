@@ -3,18 +3,12 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PASSWORD_MIN_LENGTH } from "@/lib/auth-config";
-
-function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,14 +18,14 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    if (!email.trim()) {
-      setError("Email is required");
+    if (!username.trim()) {
+      setError("Username is required");
       setLoading(false);
       return;
     }
 
-    if (!isValidEmail(email)) {
-      setError("Enter a valid email address");
+    if (!password) {
+      setError("Password is required");
       setLoading(false);
       return;
     }
@@ -39,7 +33,7 @@ export default function LoginPage() {
     const checkRes = await fetch("/api/auth/check-login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ username, password }),
     });
 
     const checkData = await checkRes.json();
@@ -51,13 +45,13 @@ export default function LoginPage() {
     }
 
     const result = await signIn("credentials", {
-      email: email.toLowerCase().trim(),
+      username: username.trim(),
       password,
       redirect: false,
     });
 
     if (result?.error) {
-      setError("Login failed. Please try again.");
+      setError("Invalid username or password");
       setLoading(false);
       return;
     }
@@ -82,13 +76,13 @@ export default function LoginPage() {
           )}
 
           <Input
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            label="Username"
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             required
-            placeholder="your@email.com"
-            autoComplete="email"
+            placeholder="Enter username"
+            autoComplete="username"
           />
 
           <Input
@@ -97,16 +91,9 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            minLength={PASSWORD_MIN_LENGTH}
-            placeholder="••••••••"
+            placeholder="Enter password"
             autoComplete="current-password"
           />
-
-          <div className="text-right">
-            <Link href="/forgot-password" className="text-sm text-blue-600 font-medium">
-              Forgot Password?
-            </Link>
-          </div>
 
           <Button type="submit" className="w-full" size="lg" disabled={loading}>
             {loading ? "Signing in..." : "Sign In"}

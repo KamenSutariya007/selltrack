@@ -2,7 +2,7 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
-import { normalizeEmail, isAllowedRegistrationEmail } from "./auth-config";
+import { normalizeUsername, isAllowedUsername } from "./auth-config";
 
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
@@ -10,39 +10,32 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
+        username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (!credentials?.username || !credentials?.password) {
           return null;
         }
 
-        const email = normalizeEmail(credentials.email);
-        const user = await prisma.user.findUnique({ where: { email } });
+        const username = normalizeUsername(credentials.username);
 
-        if (!user) return null;
-
-        if (!isAllowedRegistrationEmail(email)) {
+        if (!isAllowedUsername(username)) {
           return null;
         }
 
-        if (user.status !== "active") {
-          return null;
-        }
+        const user = await prisma.user.findUnique({ where: { username } });
+
+        if (!user || user.status !== "active") return null;
 
         const isValid = await bcrypt.compare(credentials.password, user.password);
         if (!isValid) return null;
-
-        if (!user.emailVerified) {
-          throw new Error("EMAIL_NOT_VERIFIED");
-        }
 
         return {
           id: user.id,
           name: user.name,
           email: user.email,
-          emailVerified: user.emailVerified,
+          emailVerified: true,
           role: user.role,
           status: user.status,
         };
@@ -59,7 +52,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.emailVerified = user.emailVerified as boolean;
+        token.emailVerified = true;
         token.role = user.role as string;
         token.status = user.status as string;
       }
@@ -68,7 +61,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.emailVerified = token.emailVerified as boolean;
+        session.user.emailVerified = true;
         session.user.role = token.role as string;
         session.user.status = token.status as string;
       }

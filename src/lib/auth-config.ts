@@ -1,22 +1,26 @@
-export function normalizeEmail(email: string): string {
-  return email.toLowerCase().trim();
+export function normalizeUsername(username: string): string {
+  return username.trim();
 }
 
-export function getAllowedRegistrationEmail(): string {
-  const email = process.env.ALLOWED_REGISTRATION_EMAIL;
-  if (!email) {
-    throw new Error("ALLOWED_REGISTRATION_EMAIL is not configured");
+export function getAllowedUsername(): string {
+  const username = process.env.ALLOWED_USERNAME;
+  if (!username) {
+    throw new Error("ALLOWED_USERNAME is not configured");
   }
-  return normalizeEmail(email);
+  return normalizeUsername(username);
 }
 
-export function isAllowedRegistrationEmail(email: string): boolean {
+export function isAllowedUsername(username: string): boolean {
   try {
-    const allowed = getAllowedRegistrationEmail();
-    return normalizeEmail(email) === allowed;
+    const allowed = getAllowedUsername();
+    return normalizeUsername(username) === allowed;
   } catch {
     return false;
   }
+}
+
+export function normalizeEmail(email: string): string {
+  return email.toLowerCase().trim();
 }
 
 export function getAppUrl(): string {

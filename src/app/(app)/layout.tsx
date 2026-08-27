@@ -12,10 +12,6 @@ export default async function DashboardLayout({
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
-  if (!session.user.emailVerified) {
-    redirect(`/verify-email?email=${encodeURIComponent(session.user.email || "")}`);
-  }
-
   const user = await getAuthorizedUser();
   if (!user) redirect("/unauthorized");
 

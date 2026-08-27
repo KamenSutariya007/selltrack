@@ -1,37 +1,31 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { normalizeEmail, isAllowedRegistrationEmail } from "@/lib/auth-config";
+import { normalizeUsername, isAllowedUsername } from "@/lib/auth-config";
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json();
+    const { username, password } = await request.json();
 
-    if (!email?.trim()) {
-      return NextResponse.json({ error: "Email is required", code: "EMAIL_REQUIRED" }, { status: 400 });
+    if (!username?.trim()) {
+      return NextResponse.json({ error: "Username is required", code: "USERNAME_REQUIRED" }, { status: 400 });
     }
 
-    const normalizedEmail = normalizeEmail(email);
+    const normalizedUsername = normalizeUsername(username);
 
-    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
-
-    if (!user) {
+    if (!isAllowedUsername(normalizedUsername)) {
       return NextResponse.json(
-        {
-          error: "Account not found. Please contact administrator.",
-          code: "ACCOUNT_NOT_FOUND",
-        },
-        { status: 404 }
+        { error: "Invalid username or password", code: "INVALID_CREDENTIALS" },
+        { status: 401 }
       );
     }
 
-    if (!isAllowedRegistrationEmail(normalizedEmail)) {
+    const user = await prisma.user.findUnique({ where: { username: normalizedUsername } });
+
+    if (!user) {
       return NextResponse.json(
-        {
-          error: "Account not found. Please contact administrator.",
-          code: "UNAUTHORIZED",
-        },
-        { status: 403 }
+        { error: "Invalid username or password", code: "INVALID_CREDENTIALS" },
+        { status: 401 }
       );
     }
 
@@ -45,18 +39,8 @@ export async function POST(request: Request) {
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) {
       return NextResponse.json(
-        { error: "Invalid email or password", code: "INVALID_PASSWORD" },
+        { error: "Invalid username or password", code: "INVALID_PASSWORD" },
         { status: 401 }
-      );
-    }
-
-    if (!user.emailVerified) {
-      return NextResponse.json(
-        {
-          error: "Please verify your email before logging in.",
-          code: "EMAIL_NOT_VERIFIED",
-        },
-        { status: 403 }
       );
     }
 
